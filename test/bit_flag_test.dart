@@ -187,6 +187,21 @@ void main() {
         expect(d.hasFlag(a.toFlip()), true);
       },
     );
+
+    test(
+      'Flip A Flip',
+      () {
+        const a = BitFlag(b0100);
+        const b = BitFlag(b0010);
+        const flipA = BitFlag.not(a);
+        const flipFlipA = BitFlag.not(flipA);
+        final c = a | b;
+        expect(c.hasFlag(a), true);
+        expect(c.hasFlag(flipA), false);
+        expect(c.hasFlag(flipFlipA), true);
+        expect(c.hasFlag(flipFlipA.toFlip()), true);
+      },
+    );
   });
 
   group('Function', () {
@@ -200,6 +215,14 @@ void main() {
             BitFlag.binary(11000100)); // 0000 0000 1100 0100
         expect(flag.extract(BitFlag.binary(11001010)),
             BitFlag.binary(11000010)); // 0000 0000 1100 0010
+
+        final flipFlag = BitFlag.not(flag);
+        expect(flipFlag.extract(BitFlag.binary(001100)),
+            BitFlag.not(BitFlag.binary(00000100)));
+        expect(flipFlag.extract(BitFlag.binary(11001100)),
+            BitFlag.not(BitFlag.binary(11000100)));
+        expect(flipFlag.extract(BitFlag.binary(11001010)),
+            BitFlag.not(BitFlag.binary(11000010)));
       },
     );
 
@@ -211,6 +234,12 @@ void main() {
             BitFlag.binary(0001101011011010)); // 0001 1010 1101 1010
         expect(flag.toggle(BitFlag.binary(11)),
             BitFlag.binary(0001101011010101)); // 0001 1010 1101 1010
+
+        final flipFlag = BitFlag.not(flag);
+        expect(flipFlag.toggle(BitFlag.binary(001100)),
+            BitFlag.not(BitFlag.binary(0001101011011010)));
+        expect(flipFlag.toggle(BitFlag.binary(11)),
+            BitFlag.not(BitFlag.binary(0001101011010101)));
       },
     );
   });

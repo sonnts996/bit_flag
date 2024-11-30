@@ -1,39 +1,60 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
-
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+An object uses the Integer Flag and its methods to calculator it.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- Create the integer flag as an object.
+- Merge multi-state as the only one flag.
+- Extract and check the flag states.
 
 ## Getting started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Add ```bit_flag``` into the dependencies:
+
+```yaml
+dependencies:
+  bit_flag: ^1.0.0
+```
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
 
 ```dart
-const like = 'sample';
+import 'package:bit_flag/bit_flag.dart';
+
+void main() {
+  const enable = BitFlag(b0001); //0b0001 - The first bit is 1.
+  const disable = BitFlag.not(enable); //0┆0b0001 - The first bit is 0;
+  const waiting = BitFlag(1, bitOffset: 1); //0b0010 - The second bit is 1
+  const done =
+  BitFlag.not(BitFlag(1, bitOffset: 1)); //0┆0b0010 - The second bit is 0
+  const success = BitFlag(1, bitOffset: 2); //0b0100 - The third bit is 1
+  const failed =
+  BitFlag.not(BitFlag(1, bitOffset: 2)); //0┆0b0100 - The third bit is 0
+
+  final flag = enable | done | success; //0b0101
+  print(flag.hasFlag(enable)); // true
+  print(flag.hasFlag(disable)); // false => !flag.hasFlag(enable)
+  print(flag.hasFlag(success | done)); // true
+
+  switch (flag.extract(BitFlag.binary(0110))) {
+    case const BitFlag.binary(0110): // success and waiting
+      print('success and waiting');
+      break;
+    case const BitFlag.binary(0100): // success and done
+      print('success and done');
+      break;
+    case const BitFlag.binary(0000): // failed and done
+      print(' failed and done');
+      break;
+    case const BitFlag.binary(0010): // failed and waiting
+      print('failed and waiting');
+      break;
+    default:
+      print('unknown');
+  }
+}
 ```
 
-## Additional information
+## Features and bugs
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+Please file feature requests and bugs at the [issue tracker](https://github.com/sonnts996/bit_flag/issues).
