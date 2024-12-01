@@ -77,60 +77,60 @@ abstract final class BitFlags {
   static const BitFlag flag7 = BitFlag(1 << 7);
 
   /// OR (Bitwise) two values of [a] and [b].
-  /// If both [a] and [b] are [FlipBitFlag], the result will be a [FlipBitFlag] too.
+  /// If both [a] and [b] are [ZeroBitFlag], the result will be a [ZeroBitFlag] too.
   static BitFlag or(IBitFlag a, IBitFlag b) => switch ((a, b)) {
-        (FlipBitFlag, FlipBitFlag) record =>
-          BitFlag.not(record.$1.otherSide | record.$2.otherSide),
+        (ZeroBitFlag, ZeroBitFlag) record =>
+          BitFlag.zeroAt(record.$1.mask | record.$2.mask),
         _ => BitFlag(a.value | b.value)
       };
 
   /// AND (Bitwise) two values of [a] and [b].
-  /// If both [a] and [b] are [FlipBitFlag], the result will be a [FlipBitFlag] too.
+  /// If both [a] and [b] are [ZeroBitFlag], the result will be a [ZeroBitFlag] too.
   static BitFlag and(IBitFlag a, IBitFlag b) => switch ((a, b)) {
-        (FlipBitFlag, FlipBitFlag) record =>
-          BitFlag.not(record.$1.otherSide & record.$2.otherSide),
+        (ZeroBitFlag, ZeroBitFlag) record =>
+          BitFlag.zeroAt(record.$1.mask & record.$2.mask),
         _ => BitFlag(a.value & b.value)
       };
 
   /// XOR (Bitwise) two values of [a] and [b].
-  /// If both [a] and [b] are [FlipBitFlag], the result will be a [FlipBitFlag] too.
+  /// If both [a] and [b] are [ZeroBitFlag], the result will be a [ZeroBitFlag] too.
   static BitFlag xor(IBitFlag a, IBitFlag b) => switch ((a, b)) {
-        (FlipBitFlag, FlipBitFlag) record =>
-          BitFlag.not(record.$1.otherSide ^ record.$2.otherSide),
+        (ZeroBitFlag, ZeroBitFlag) record =>
+          BitFlag.zeroAt(record.$1.mask ^ record.$2.mask),
         _ => BitFlag(a.value ^ b.value),
       };
 
   /// SHIFT LEFT (Bitwise) two values of [a] and [b].
-  /// If both [a] and [b] are [FlipBitFlag], the result will be a [FlipBitFlag] too.
+  /// If both [a] and [b] are [ZeroBitFlag], the result will be a [ZeroBitFlag] too.
   static BitFlag shiftLeft(IBitFlag a, int b) => switch (a) {
-        FlipBitFlag value => BitFlag.not(value.otherSide << b),
+        ZeroBitFlag value => BitFlag.zeroAt(value.mask << b),
         _ => BitFlag(a.value << b),
       };
 
   /// SHIFT RIGHT (Bitwise) two values of [a] and [b].
-  /// If both [a] and [b] are [FlipBitFlag], the result will be a [FlipBitFlag] too.
+  /// If both [a] and [b] are [ZeroBitFlag], the result will be a [ZeroBitFlag] too.
   static BitFlag shiftRight(IBitFlag a, int b) => switch (a) {
-        FlipBitFlag value => BitFlag.not(value.otherSide >> b),
+        ZeroBitFlag value => BitFlag.zeroAt(value.mask >> b),
         _ => BitFlag(a.value >> b),
       };
 
   /// Returns true if the [origin] contains the [flag].
-  /// If the [flag] is a [FlipBitFlag], the result will be true when the [origin] does not contain [flag.otherSide].
+  /// If the [flag] is a [ZeroBitFlag], the result will be true when the [origin] does not contain [flag.mask].
   static bool hasFlag(IBitFlag origin, IBitFlag flag) => switch (flag) {
-        FlipBitFlag p1 => (origin.value & p1.otherSide.value) == 0,
+        ZeroBitFlag p1 => (origin.value & p1.mask.value) == 0,
         _ => (origin & flag).value == flag.value,
       };
 
-  /// Flip the flag. If the [origin] is a [FlipBitFlag], the result will be a normal [BitFlag].
-  /// Otherwise, the result will be changed to [FlipBitFlag].
+  /// Flip the flag. If the [origin] is a [ZeroBitFlag], the result will be a normal [BitFlag].
+  /// Otherwise, the result will be changed to [ZeroBitFlag].
   static BitFlag flip(IBitFlag origin) => switch (origin) {
-        FlipBitFlag value => BitFlag(value.otherSide.value),
-        _ => BitFlag.not(origin),
+        ZeroBitFlag value => BitFlag(value.mask.value),
+        _ => BitFlag.zeroAt(origin),
       };
 
   ///  Returns true if two flags have the same value:
   /// - If the flag is an extended class of [IBitFlag], the returns are false if they are not the same type, except one of them is [BitFlag].
-  /// - If both flags are [FlipBitFlag] type, the return is true if they have the same otherSide's value. Otherwise, it is false.
+  /// - If both flags are [ZeroBitFlag] type, the return is true if they have the same otherSide's value. Otherwise, it is false.
   static bool equals(IBitFlag a, IBitFlag b) {
     if (identical(a, b)) return true;
     if (a.runtimeType != b.runtimeType) {
@@ -141,9 +141,9 @@ abstract final class BitFlags {
       }
     }
 
-    if (a is FlipBitFlag && b is FlipBitFlag) {
-      return a.otherSide == b.otherSide;
-    } else if (a is FlipBitFlag || b is FlipBitFlag) {
+    if (a is ZeroBitFlag && b is ZeroBitFlag) {
+      return a.mask == b.mask;
+    } else if (a is ZeroBitFlag || b is ZeroBitFlag) {
       return false;
     }
 
@@ -151,26 +151,48 @@ abstract final class BitFlags {
   }
 
   /// Returns flag and keeps the bit that matches the 1-bit in the [mask]. All of the other bits will be set to 0.
-  static BitFlag extract(IBitFlag origin, IBitFlag mask) {
+  static BitFlag extract(
+    IBitFlag origin,
+    IBitFlag mask, {
+    bool trimRight = false,
+  }) {
     assert(
-        mask is! FlipBitFlag,
+        mask is! ZeroBitFlag,
         """The position parameter stands for the bit's position which will be extracted from the origin, so it can not be a FlipBitFlag.\n"""
         """Example: If the position is BitFlag(b0011), it will get the origin's first and second bits (from the right).""");
+    int remove0(int num, int mask) {
+      if (!trimRight) return num;
+      while (mask > 0 && mask % 2 == 0) {
+        mask >>= 1;
+        num >>= 1;
+      }
+      return num;
+    }
+
     return switch (origin) {
-      FlipBitFlag value => BitFlag.notValue(value.otherSide.value & mask.value),
-      _ => BitFlag(origin.value & mask.value),
+      ZeroBitFlag value =>
+        BitFlag.zeroAtValue(remove0(value.mask.value & mask.value, mask.value)),
+      _ => BitFlag(remove0(origin.value & mask.value, mask.value)),
     };
+
+    // if(trimRight){
+    //   while mask > 0 and num % 2 == 0:
+    //   num >>= 1
+    //   return num
+    // }else{
+    //   return result;
+    // }
   }
 
   /// Toggle the bit that matches the 1-bit in the [mask].
   static BitFlag toggle(IBitFlag origin, IBitFlag mask) {
     assert(
-        mask is! FlipBitFlag,
+        mask is! ZeroBitFlag,
         """The position parameter stands for the bit's position which will be extracted from the origin, so it can not be a FlipBitFlag.\n"""
         """Example: If the position is BitFlag(b0011), it will get the origin's first and second bits (from the right).""");
 
     return switch (origin) {
-      FlipBitFlag value => BitFlag.notValue(value.otherSide.value ^ mask.value),
+      ZeroBitFlag value => BitFlag.zeroAtValue(value.mask.value ^ mask.value),
       _ => BitFlag(origin.value ^ mask.value),
     };
   }

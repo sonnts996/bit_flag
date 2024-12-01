@@ -1,6 +1,6 @@
 name: bit_flag
 description: An object uses the Integer Flag and its methods to calculator it.
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/sonnts996/bit_flag
 
 environment:
@@ -8,7 +8,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  meta: ^1.16.0
+  meta: ^1.10.0
 
 dev_dependencies:
   lints: ^5.0.0
